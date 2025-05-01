@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PAPERCUTTING.art</title>
+    <script src="%VITE_P5_CDN%"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5.capture@1.6.0/dist/p5.capture.umd.min.js"></script>
+    <style>
+      body {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <aside id="help">
+      <!-- Top Bar: Language + Close -->
+      <div id="help-topbar">
+        <div id="language-toggle">
+          <button id="lang-en" onclick="setLanguage('en')">English</button>
+          <button id="lang-zh" onclick="setLanguage('zh')">简体中文</button>
+          <button id="lang-zh-hant" onclick="setLanguage('zh-Hant')">繁體中文</button>
+        </div>
+        <button id="close-help" aria-label="Close Help">
+          <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Feedback Button -->
+      <div id="feedback-container">
+        <a id="feedback-button" href="#" target="_blank" aria-label="Send Feedback">Feedback</a>
+      </div>
+
+      <!-- English Content -->
+      <div id="content-en" lang="en">
+        <div class="entry-note">
+          👉 <strong>Click anywhere</strong> on the page to <span class="important">start</span>.<br />
+          <ul>
+            <li><strong>Press and hold</strong> to start a cut</li>
+            <li><strong>Drag</strong> to define your cutting path</li>
+            <li><strong>Only one cutting path</strong> can exist at a time</li>
+            <li>You can continue a path if you start from one of its ends</li>
+            <li class="important">A cut completes only if the path intersects itself or touches the paper edge</li>
+            <li><strong>Scroll</strong> to zoom in and out</li>
+            <li><strong>Double click</strong> to exit interaction mode (regain mouse control)</li>
+          </ul>
+        </div>
+
+        <h2>Keyboard Shortcuts</h2>
+
+        <h3>View</h3>
+        <ul>
+          <li><code>H</code>: Toggle help panel visibility</li>
+          <li><code>F</code>: Toggle fullscreen</li>
+          <li><code>S</code>: Toggle scissors visibility</li>
+          <li><code>A</code>: Toggle cutting aim visibility</li>
+        </ul>
+
+        <h3>Edit</h3>
+        <ul>
+          <li><code>←</code>: Rotate counterclockwise</li>
+          <li><code>→</code>: Rotate clockwise</li>
+          <li><code>↑</code>: Flip horizontally</li>
+          <li><code>↓</code>: Flip vertically</li>
+          <li>
+            <span class="action-key"><code>Z</code></span
+            >: Undo
+          </li>
+          <li>
+            <span class="action-key"><code>Shift+Z</code></span
+            >: Redo
+          </li>
+          <li class="note">✂️ After a successful cut, the algorithm keeps one piece. If it’s not what you expected, use <code>Undo</code> and then click the piece you want to discard.</li>
+        </ul>
+
+        <h3>Reference Image</h3>
+        <ul>
+          <li><code>C</code>: Capture still from webcam <br />&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">📸 First time may ask for camera permission and take a few seconds to load</span></li>
+          <li><code>L</code>: Load saved user reference image</li>
+          <li><code>O</code>: Show built-in reference image</li>
+          <li><code>Space</code>: Toggle reference image visibility</li>
+        </ul>
+
+        <h3>Export & Loading</h3>
+        <ul>
+          <li>
+            <span class="action-key"><code>S</code></span
+            >: Export current papercut as JSON
+          </li>
+          <li>
+            <span class="action-key"><code>E</code></span
+            >: Export current papercut as SVG
+          </li>
+          <li>
+            <span class="action-key"><code>O</code></span
+            >: Export current papercut as PNG
+          </li>
+        </ul>
+
+        <h3>Presets</h3>
+        <ul>
+          <li><code>0</code>: Load saved papercut from local storage</li>
+          <li><code>1–7</code>: Load preset paper shapes</li>
+          <li><code>8</code>: Load “春” papercut</li>
+          <li><code>9</code>: Load “artist's portrait” papercut</li>
+        </ul>
+
+        <p class="note">💡 You can also <strong>drag and drop</strong> a previously exported JSON file to load a design, or an image file to use as an overlay — both will be stored in your browser’s local storage for later use.</p>
+      </div>
+
+      <!-- Chinese Content -->
+      <div id="content-zh" lang="zh" style="display: none">
+        <div class="entry-note">
+          👉 <strong>点击页面任意位置</strong>以<span class="important">开始剪纸</span>。<br />
+          <ul>
+            <li><strong>按住鼠标</strong>开始剪切</li>
+            <li><strong>拖拽鼠标</strong>以定义剪切路径</li>
+            <li><strong>每次只能存在一条剪切路径</strong></li>
+            <li>如果从已有路径的端点开始，可以继续延伸</li>
+            <li class="important">剪纸只有在路径形成闭环或触碰到纸张边缘时才算完成</li>
+            <li><strong>滚动鼠标</strong>可以缩放视图</li>
+            <li><strong>双击</strong>退出交互模式（恢复鼠标控制）</li>
+          </ul>
+        </div>
+
+        <h2>键盘快捷键</h2>
+
+        <h3>视图</h3>
+        <ul>
+          <li><code>H</code>：显示/隐藏帮助面板</li>
+          <li><code>F</code>：切换全屏模式</li>
+          <li><code>S</code>：显示/隐藏剪刀</li>
+          <li><code>A</code>：显示/隐藏剪切点</li>
+        </ul>
+
+        <h3>编辑</h3>
+        <ul>
+          <li><code>←</code>：逆时针旋转</li>
+          <li><code>→</code>：顺时针旋转</li>
+          <li><code>↑</code>：水平翻转</li>
+          <li><code>↓</code>：垂直翻转</li>
+          <li>
+            <span class="action-key"><code>Z</code></span
+            >：撤销
+          </li>
+          <li>
+            <span class="action-key"><code>Shift+Z</code></span
+            >：重做
+          </li>
+          <li class="note">✂️ 成功切割后，算法会保留其中一块。如果不是你想保留的部分，可以使用<code>撤销</code>，然后点击你想要丢弃的那块。</li>
+        </ul>
+
+        <h3>参考图</h3>
+        <ul>
+          <li><code>C</code>：由摄像头拍摄照片<br />&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">📸 第一次使用时可能会请求摄像头权限，并需要几秒钟加载</span></li>
+          <li><code>L</code>：加载已保存的用户图像叠加</li>
+          <li><code>O</code>：显示内置图像作为参考图</li>
+          <li><code>Space</code>：显示/隐藏参考图</li>
+        </ul>
+
+        <h3>导出与加载</h3>
+        <ul>
+          <li>
+            <span class="action-key"><code>S</code></span
+            >：将当前剪纸导出为 JSON
+          </li>
+          <li>
+            <span class="action-key"><code>E</code></span
+            >：将当前剪纸导出为 SVG
+          </li>
+          <li>
+            <span class="action-key"><code>O</code></span
+            >：将当前剪纸导出为 PNG
+          </li>
+        </ul>
+
+        <h3>预设</h3>
+        <ul>
+          <li><code>0</code>：从本地存储加载已保存的设计</li>
+          <li><code>1–7</code>：加载预设的纸张形状</li>
+          <li><code>8</code>：加载“春”字剪纸</li>
+          <li><code>9</code>：加载“艺术家的肖像”剪纸</li>
+        </ul>
+
+        <p class="note">💡 你也可以<strong>拖拽</strong>一个之前导出的 JSON 文件以加载该剪纸，或拖拽一张图片作为参考图 —— 两者都会被存储在你的浏览器本地，供以后使用。</p>
+      </div>
+
+      <!-- Traditional Chinese Content -->
+      <div id="content-zh-hant" lang="zh-Hant" style="display: none">
+        <div class="entry-note">
+          👉 <strong>點擊頁面任意位置</strong>以<span class="important">開始剪紙</span>。<br />
+          <ul>
+            <li><strong>按住滑鼠</strong>開始剪切</li>
+            <li><strong>拖曳滑鼠</strong>以定義剪切路徑</li>
+            <li><strong>每次只能存在一條剪切路徑</strong></li>
+            <li>如果從已有路徑的端點開始，可以繼續延伸</li>
+            <li class="important">剪紙只有在路徑形成閉環或觸碰到紙張邊緣時才算完成</li>
+            <li><strong>滾動滑鼠</strong>可以縮放視圖</li>
+            <li><strong>雙擊</strong>退出互動模式（恢復滑鼠控制）</li>
+          </ul>
+        </div>
+
+        <h2>鍵盤快捷鍵</h2>
+
+        <h3>視圖</h3>
+        <ul>
+          <li><code>H</code>：顯示/隱藏說明面板</li>
+          <li><code>F</code>：切換全螢幕模式</li>
+          <li><code>S</code>：顯示/隱藏剪刀</li>
+          <li><code>A</code>：顯示/隱藏剪切瞄準點</li>
+        </ul>
+
+        <h3>編輯</h3>
+        <ul>
+          <li><code>←</code>：逆時針旋轉</li>
+          <li><code>→</code>：順時針旋轉</li>
+          <li><code>↑</code>：水平翻轉</li>
+          <li><code>↓</code>：垂直翻轉</li>
+          <li>
+            <span class="action-key"><code>Z</code></span
+            >：復原
+          </li>
+          <li>
+            <span class="action-key"><code>Shift+Z</code></span
+            >：重做
+          </li>
+          <li class="note">✂️ 成功剪切後，系統會保留其中一塊。如果不是你想保留的部分，可以使用<code>復原</code>，然後點擊你想捨棄的那塊。</li>
+        </ul>
+
+        <h3>參考圖</h3>
+        <ul>
+          <li><code>C</code>：由攝影機拍攝參考圖<br />&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">📸 第一次使用時可能會要求攝影機權限，並需要幾秒鐘加載</span></li>
+          <li><code>L</code>：載入已儲存的使用者參考圖</li>
+          <li><code>O</code>：顯示內建參考圖</li>
+          <li><code>Space</code>：切換參考圖顯示</li>
+        </ul>
+
+        <h3>匯出與載入</h3>
+        <ul>
+          <li>
+            <span class="action-key"><code>S</code></span
+            >：將當前剪紙匯出為 JSON
+          </li>
+          <li>
+            <span class="action-key"><code>E</code></span
+            >：將當前剪紙匯出為 SVG
+          </li>
+          <li>
+            <span class="action-key"><code>O</code></span
+            >：將當前剪紙匯出為 PNG
+          </li>
+        </ul>
+
+        <h3>預設樣式</h3>
+        <ul>
+          <li><code>0</code>：從本機儲存載入已儲存的剪紙</li>
+          <li><code>1–7</code>：載入預設紙張形狀</li>
+          <li><code>8</code>：載入「春」字剪紙</li>
+          <li><code>9</code>：載入「藝術家肖像」剪紙</li>
+        </ul>
+
+        <p class="note">💡 你也可以<strong>拖曳</strong>之前匯出的 JSON 檔案來載入剪紙設計，或拖曳一張圖片作為參考圖 —— 兩者都會被儲存在瀏覽器的本機儲存中，以便日後使用。</p>
+      </div>
+    </aside>
+
+    <footer>PAPERCUTTING.art by <a href="https://jackbdu.com/about" target="_blank">Jack B. Du</a></footer>
+
+    <script>
+      const feedbackLinks = {
+        en: { href: "https://forms.gle/csjv8GqBMoQMZZ647", label: "💬 Feedback" },
+        zh: { href: "https://www.wjx.cn/vm/YUYOt1Z.aspx", label: "💬 使用反馈" },
+        "zh-Hant": { href: "https://www.wjx.cn/vm/hJk7yn2.aspx", label: "💬 意見回饋" },
+      };
+
+      const feedbackButton = document.getElementById("feedback-button");
+
+      function setLanguage(lang) {
+        document.getElementById("content-en").style.display = lang === "en" ? "block" : "none";
+        document.getElementById("content-zh").style.display = lang === "zh" ? "block" : "none";
+        document.getElementById("content-zh-hant").style.display = lang === "zh-Hant" ? "block" : "none";
+
+        document.getElementById("lang-en")?.classList.toggle("active", lang === "en");
+        document.getElementById("lang-zh")?.classList.toggle("active", lang === "zh");
+        document.getElementById("lang-zh-hant")?.classList.toggle("active", lang === "zh-Hant");
+
+        // Set feedback link and label
+        const info = feedbackLinks[lang];
+        if (info) {
+          feedbackButton.href = info.href;
+          feedbackButton.textContent = info.label;
+        }
+      }
+
+      // Auto-detect on page load
+      window.addEventListener("DOMContentLoaded", () => {
+        const userLang = (navigator.language || navigator.userLanguage || "").toLowerCase();
+
+        if (userLang.startsWith("zh-hant") || userLang.startsWith("zh-tw") || userLang.startsWith("zh-hk") || userLang.startsWith("zh-mo")) {
+          setLanguage("zh-Hant"); // Traditional Chinese
+        } else if (userLang.startsWith("zh")) {
+          setLanguage("zh"); // Simplified Chinese
+        } else {
+          setLanguage("en"); // Default to English
+        }
+
+        document.getElementById("close-help").addEventListener("click", () => {
+          document.body.classList.add("hide-info");
+        });
+      });
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
