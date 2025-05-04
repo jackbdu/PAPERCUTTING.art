@@ -1,3 +1,5 @@
+![](./docs/assets/papercutting.art-logo.svg)
+
 # PAPERCUTTING.art
 
 Across continents and millennia, people have cut paper to tell stories, celebrate life, and express culture. [PAPERCUTTING.art](https://papercutting.art) explores how a digital tool can reinterpret this age-old folk art as a space for creativity, connection, and cultural reflection.
