@@ -4,6 +4,8 @@ const heading = (v) => Math.atan2(v.y, v.x);
 
 const mag = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
 
+const add = (v1, v2) => ({ x: v1.x + v2.x, y: v1.y + v2.y });
+
 const sub = (v1, v2) => ({ x: v1.x - v2.x, y: v1.y - v2.y });
 
 const mult = (v, n) => ({ x: v.x * n, y: v.y * n });
@@ -30,4 +32,4 @@ const lerp = (a, b, amount) => {
   return { x: a.x + (b.x - a.x) * amount || 0, y: a.y + (b.y - a.y) * amount || 0 };
 };
 
-export { heading, mag, sub, mult, dot, normalize, setMag, rotate, lerp };
+export { heading, mag, add, sub, mult, dot, normalize, setMag, rotate, lerp };

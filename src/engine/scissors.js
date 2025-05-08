@@ -141,6 +141,20 @@ class Scissors {
     return this._cutType;
   }
 
+  cycleDisplay() {
+    if (this.hideBody) {
+      this.hideBody = false;
+    } else {
+      const keys = Object.keys(ScissorsPresets);
+      let index = 0;
+      keys.forEach((key, i) => {
+        if (ScissorsPresets[key] === this.design) index = (i + 1) % keys.length;
+      });
+      if (index === 0) this.hideBody = true;
+      this.design = ScissorsPresets[keys[index]];
+    }
+  }
+
   toggleBody() {
     this.hideBody = !this.hideBody;
   }

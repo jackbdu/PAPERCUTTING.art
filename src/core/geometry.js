@@ -2,6 +2,24 @@ import { dist } from "../utils/index.js";
 
 const isOdd = (n) => n % 2 === 1;
 
+// https://www.geeksforgeeks.org/area-of-a-polygon-with-given-n-ordered-vertices/
+const getPolygonArea = (polygon) => {
+  // Initialize area
+  let area = 0.0;
+
+  // Calculate value of shoelace formula
+  let j = polygon.length - 1;
+  for (let i = 0; i < polygon.length; i++) {
+    area += (polygon[j].x + polygon[i].x) * (polygon[j].y - polygon[i].y);
+
+    // j is previous vertex to i
+    j = i;
+  }
+
+  // Return absolute value
+  return Math.abs(area / 2.0);
+};
+
 // Reference: https://www.mathsisfun.com/algebra/line-equation-2points.html
 // ax + by = c;
 const twoPointsToLineCoefficients = (x1, y1, x2, y2) => {
@@ -127,8 +145,8 @@ const polygonInPolygon = (polygon1, polygon2) => {
 };
 
 const pointInPolygonWithHoles = (px, py, polygonWithHoles) => {
-  const contour = polygonWithHoles.contour ?? [];
-  const holes = polygonWithHoles.holes ?? [];
+  const contour = polygonWithHoles?.contour ?? [];
+  const holes = polygonWithHoles?.holes ?? [];
   if (pointInPolygon(px, py, contour)) {
     for (const hole of holes) {
       if (pointInPolygon(px, py, hole)) return false;
@@ -206,8 +224,8 @@ const polylinePolygonIntersections = (polyline, polygon, minDist = 1) => {
 };
 
 const polylinePolygonWithHolesIntersections = (polyline, polygonWithHoles, minDist = 1) => {
-  const contour = polygonWithHoles.contour ?? [];
-  const holes = polygonWithHoles.holes ?? [];
+  const contour = polygonWithHoles?.contour ?? [];
+  const holes = polygonWithHoles?.holes ?? [];
   const pcIntersections = polylinePolygonIntersections(polyline, contour, minDist);
   const phIntersections = holes.map((hole) => polylinePolygonIntersections(polyline, hole, minDist)).flat();
   return [...pcIntersections, ...phIntersections];
@@ -321,8 +339,8 @@ const reorderPolygonWithIntersectedLineSegment = (polygon, px, py, qx, qy) => {
 
 // POLYLINE FRONT AND BACK SHOULD INTERSECT WITH CONTOUR AND HOLE
 const mergeContourAndHoleWithPolyline = (polygonWithHoles, polyline) => {
-  const contour = polygonWithHoles.contour ?? [];
-  const holes = polygonWithHoles.holes ?? [];
+  const contour = polygonWithHoles?.contour ?? [];
+  const holes = polygonWithHoles?.holes ?? [];
   const c2hPolyline = polyline.slice();
   const h2cPolyline = polyline.slice().reverse();
   if (polylinePolygonIntersections(polyline.slice(polyline.length - 2, polyline.length), contour).length > 0) {
@@ -358,8 +376,8 @@ const mergeContourAndHoleWithPolyline = (polygonWithHoles, polyline) => {
 
 // POLYLINE FRONT AND BACK SHOULD INTERSECT WITH ONE (BOTH INTERSECTING THE SAME HOLE) OR TWO OF THE HOLES
 const handlePolygonWithHolesIntersectedWithPolyline = (polygonWithHoles, polyline) => {
-  const contour = polygonWithHoles.contour ?? [];
-  const holes = polygonWithHoles.holes.slice();
+  const contour = polygonWithHoles?.contour ?? [];
+  const holes = polygonWithHoles?.holes?.slice() ?? [];
   const a2bPolyline = polyline.slice();
   const b2aPolyline = polyline.slice().reverse();
   let holeA;
@@ -409,7 +427,7 @@ const handlePolygonWithHolesIntersectedWithPolyline = (polygonWithHoles, polylin
   } else if (holeA && holeB && holeAIndex === holeBIndex) {
     const polygons = splitPolygonWithPolyline(holeA, polyline);
     // THIS IS COORDINATE DEPENDENT, CURRENTLY ASSUMING P5 COORDINATE (X TO THE EAST, Y TO THE SOUTH)
-    const newHole = polygons.filter((polygon) => pathOrientation(polygon) > 0)?.at(0);
+    const newHole = polygons.filter((polygon) => pathOrientation(polygon) > 0)?.at(0) ?? [];
     const cutoutContour = polygons.filter((polygon) => pathOrientation(polygon) < 0)?.at(0);
     const cutoutHoles = [];
     const updatedHoles = [];
@@ -428,8 +446,8 @@ const handlePolygonWithHolesIntersectedWithPolyline = (polygonWithHoles, polylin
 };
 
 const applyPolylineToPolygonWithHoles = (polygonWithHoles, polyline) => {
-  const contour = polygonWithHoles.contour ?? [];
-  const holes = polygonWithHoles.holes ?? [];
+  const contour = polygonWithHoles?.contour ?? [];
+  const holes = polygonWithHoles?.holes ?? [];
   const pcIntersections = polylinePolygonIntersections(polyline, contour);
   const phIntersections = holes.map((hole) => polylinePolygonIntersections(polyline, hole)).flat();
   if (pcIntersections.length === 2) {
@@ -446,4 +464,4 @@ const applyPolylineToPolygonWithHoles = (polygonWithHoles, polyline) => {
   }
 };
 
-export { setPathOrientation, pointInPolygon, polygonInPolygon, pointInPolygonWithHoles, polylineBackSelfIntersection, backSelfIntersectPolylineToPolygon, polylinePolygonIntersections, polylinePolygonWithHolesIntersections, splitPolygonWithPolyline, applyPolylineToPolygonWithHoles };
+export { getPolygonArea, setPathOrientation, pointInPolygon, polygonInPolygon, pointInPolygonWithHoles, polylineBackSelfIntersection, backSelfIntersectPolylineToPolygon, polylinePolygonIntersections, polylinePolygonWithHolesIntersections, splitPolygonWithPolyline, applyPolylineToPolygonWithHoles };

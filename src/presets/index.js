@@ -1,3 +1,4 @@
+export * from "./interface-presets.js";
 export * from "./paper-presets.js";
 export * from "./papercut-presets.js";
 export * from "./scissors-presets.js";

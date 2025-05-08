@@ -22,21 +22,21 @@ const graphicsData = {
   },
   path: {
     points: [
-      { x: 0, y: 0, z: 0 },
-      { x: 1, y: 0, z: 0 },
-      { x: 1, y: 1, z: 0 },
-      { x: 0, y: 1, z: 0 },
-      { x: 0, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0, u: 0, v: 0 },
+      { x: 1, y: 0, z: 0, u: 1, v: 0 },
+      { x: 1, y: 1, z: 0, u: 1, v: 1 },
+      { x: 0, y: 1, z: 0, u: 0, v: 1 },
+      { x: 0, y: 0, z: 0, u: 0, v: 0 },
     ],
     holes: [
       {
         path: {
           points: [
-            { x: 0, y: 0, z: 0 },
-            { x: 0.5, y: 0, z: 0 },
-            { x: 0.5, y: 0.5, z: 0 },
-            { x: 0, y: 0.5, z: 0 },
-            { x: 0, y: 0, z: 0 },
+            { x: 0, y: 0, z: 0, u: 0, v: 0 },
+            { x: 0.5, y: 0, z: 0, u: 0.5, v: 0 },
+            { x: 0.5, y: 0.5, z: 0, u: 0.5, v: 0.5 },
+            { x: 0, y: 0.5, z: 0, u: 0, v: 0.5 },
+            { x: 0, y: 0, z: 0, u: 0, v: 0 },
           ],
         },
       },
@@ -76,11 +76,11 @@ Structure of the exported JSON file used to save, share, or reload a design.
 {
   "meta": {
     "app": "PAPERCUTTING.art",
-    "url": "https://papercutting.art/",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "format": "papercut-json-v1",
     "exported": "2025-05-04T21:34:36.119Z",
-    "instructions": "To view or edit this file, open the URL above in your web browser and drag this file to the window."
+    "homepage": "https://papercutting.art",
+    "instructions": "To view or edit this file, visit homepage and drag this file to the browser window."
   },
   "data": {
     "x": 0,

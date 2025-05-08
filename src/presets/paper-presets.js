@@ -1,6 +1,6 @@
 const BASE_SIZE = 512;
 const ASPECT_RATIO = 210 / 297;
-const COLOR = "#e01b0d";
+const COLOR = "#d13030";
 
 const PaperPresets = Object.freeze({
   SQUARE: {

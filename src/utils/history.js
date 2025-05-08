@@ -9,9 +9,9 @@ class History {
   }
 
   save(obj) {
-    this.snapshots.length = this.index + 1;
     const snapshot = JSON.stringify(obj);
     if (!this.matchRecent(snapshot)) {
+      this.snapshots.length = this.index + 1;
       this.snapshots.push(snapshot);
       this.snapshots.length < this.size ? this.index++ : this.snapshots.splice(0, 1);
       this.saveToLocalStorage();

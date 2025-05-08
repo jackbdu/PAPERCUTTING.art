@@ -14,7 +14,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="hide-help">
     <main id="app"></main>
     <aside id="help">
       <!-- Top Bar: Language + Close -->
@@ -269,7 +269,7 @@
       </div>
     </aside>
 
-    <footer>PAPERCUTTING.art by <a href="https://jackbdu.com/about" target="_blank">Jack B. Du</a></footer>
+    <footer>PAPERCUTTING.art by <a href="https://jackbdu.com/about" target="_blank">Jack B. Du</a> ❤️ <a href="https://github.com/jackbdu/PAPERCUTTING.art">Learn More</a></footer>
 
     <script>
       const feedbackLinks = {
@@ -310,7 +310,7 @@
         }
 
         document.getElementById("close-help").addEventListener("click", () => {
-          document.body.classList.add("hide-info");
+          document.body.classList.add("hide-help");
         });
       });
     </script>

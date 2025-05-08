@@ -1,7 +1,8 @@
 {
-  "name": "papercutting",
+  "name": "PAPERCUTTING.art",
+  "version": "0.0.1",
+  "description": "Web-based vector-graphics design tool for exploring paper-cutting art.",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,5 +15,17 @@
     "stats.js": "^0.17.0",
     "vite": "^6.2.0",
     "vitest": "^3.1.2"
+  },
+  "homepage": "https://papercutting.art",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jackbdu/PAPERCUTTING.art"
+  },
+  "bugs": {
+    "url": "https://github.com/jackbdu/PAPERCUTTING.art/issues"
+  },
+  "author": {
+    "name": "Jack B. Du",
+    "url": "https://jackbdu.com"
   }
 }

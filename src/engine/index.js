@@ -1,5 +1,6 @@
 export * from "./paper.js";
 export * from "./scissors.js";
+export * from "./interface.js";
 export * from "./render-utils.js";
 export * from "./render-p5.js";
 export * from "./render-svg.js";

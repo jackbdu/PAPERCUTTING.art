@@ -1,7 +1,8 @@
 import pkg from "../../package.json";
-import { dist, vector, polygon } from "../utils/index.js";
+import { dist, vector, polygon, rectangle } from "../utils/index.js";
 import { geometry, simplifyPath } from "../core/index.js";
-import { AnimationPresets } from "../presets/animation-presets";
+import { AnimationPresets } from "../presets/index.js";
+import { getBoundingBox } from "./render-utils.js";
 
 const BASE_SNAPPING_DISTANCE = 16;
 const BASE_MIN_POINT_GAP = 4;
@@ -34,24 +35,44 @@ class Paper {
   }
 
   loadPreset(preset) {
-    const ignoredOptions = {
-      pieces: undefined,
-      scraps: undefined,
-      polycuts: undefined,
-      rotation: undefined,
-      xFlipped: undefined,
-      yFlipped: undefined,
-    };
+    const { pieces, scraps, polycuts, rotation, xFlipped, yFlipped, ...filteredSnapshot } = this.toSnapshot();
+    const loadedPreset = this.preprocess(preset);
     const presetOptions = {
-      ...this.toJSON(),
-      ...ignoredOptions,
-      ...(preset?.data ?? preset ?? {}),
+      ...filteredSnapshot,
+      ...loadedPreset,
     };
     this.loadOptions(presetOptions);
   }
 
+  scalePiece(piece, w, h) {
+    const validatePoint = (point) => point?.x && point?.y;
+    const scalePoint = (point, w, h) => ({
+      x: point.x * w,
+      y: point.y * h,
+    });
+    const scalePath = (path, w, h) => path.map((point) => scalePoint(point, w, h));
+    const scaledPiece = { ...piece };
+    if (piece?.contour && Array.isArray(piece.contour)) scaledPiece.contour = scalePath(piece.contour.filter(validatePoint), w, h);
+    if (piece?.holes && Array.isArray(piece.holes)) scaledPiece.holes = piece.holes.map((hole) => scalePath(hole?.filter(validatePoint) ?? [], w, h));
+    return scaledPiece;
+  }
+
+  preprocess(preset) {
+    let processed = preset?.data ?? preset ?? {};
+    switch (preset?.meta?.format) {
+      case "papercut-json-v1-normalized":
+        if (processed.pieces) processed.pieces = processed.pieces.map((piece) => this.scalePiece(piece, processed.width ?? this.width, processed.height ?? this.height));
+        break;
+    }
+    return processed;
+  }
+
   toJSON() {
-    // THIS DEFINES WHAT'S TRACKED IN HISTORY
+    return this.toSnapshot();
+  }
+
+  // DEFINE TRACKED PROPERTIES IN HISTORY SNAPSHOT
+  toSnapshot() {
     return {
       x: this.x,
       y: this.y,
@@ -59,41 +80,28 @@ class Paper {
       height: this.height,
       fill: this.fill,
       shape: this.shape,
-      pieces: this.pieces,
       rotation: this.rotation,
       xFlipped: this.xFlipped,
       yFlipped: this.yFlipped,
-      // scraps: this.scraps,
-      polycuts: this.polycuts,
       manualScrapSelection: true,
+      pieces: this.pieces,
+      polycuts: this.polycuts,
     };
   }
 
   toExport() {
     const meta = {
-      app: "PAPERCUTTING.art",
-      url: "https://papercutting.art/",
+      app: pkg.name,
       version: pkg.version,
       format: "papercut-json-v1",
       exported: new Date().toISOString(),
-      instructions: "To view or edit this file, open the URL above in your web browser and drag this file to the window.",
+      homepage: pkg.homepage,
+      instructions: "To view or edit this file, visit homepage and drag this file to the browser window.",
     };
 
-    const data = {
-      x: this.x,
-      y: this.y,
-      width: this.width,
-      height: this.height,
-      fill: this.fill,
-      shape: this.shape,
-      pieces: this.pieces.slice(0, 1),
-      rotation: this.rotation,
-      xFlipped: this.xFlipped,
-      yFlipped: this.yFlipped,
-      // scraps: this.scraps,
-      // polycuts: this.polycuts,
-      // manualScrapSelection: true,
-    };
+    const { polycuts, manualScrapSelection, ...filteredSnapshot } = this.toSnapshot();
+    const data = filteredSnapshot;
+
     return { meta, data };
   }
 
@@ -116,13 +124,7 @@ class Paper {
         contour = polygon(0, 0, this.width, this.height, 4);
         break;
       default:
-        contour = [
-          { x: this.x - this.width / 2, y: this.y - this.height / 2 },
-          { x: this.x + this.width / 2, y: this.y - this.height / 2 },
-          { x: this.x + this.width / 2, y: this.y + this.height / 2 },
-          { x: this.x - this.width / 2, y: this.y + this.height / 2 },
-          { x: this.x - this.width / 2, y: this.y - this.height / 2 },
-        ];
+        contour = rectangle(0, 0, this.width, this.height);
         break;
     }
     return [{ contour, holes: [] }];
@@ -136,69 +138,59 @@ class Paper {
     return { x: point.x, y: point.y, z: point.z ?? 0, u: uvVector.x + 0.5, v: uvVector.y + 0.5 };
   };
 
-  videoGraphics(t, presetKey = "scrapsFlipAwayAndCameraMotion", seed = 0) {
-    return presetKey in AnimationPresets ? AnimationPresets[presetKey](this, t, seed) : this.mainPiecesGraphics;
-  }
+  holeToPath = (hole) => ({ points: hole?.map(this.appendUvToPoint) ?? [] });
 
-  get printGraphics() {
-    return {
-      style: { fill: "#fff" },
-      children: [this.mainPiecesGraphics],
-    };
-  }
+  pieceToPath = (piece) => ({
+    points: piece.contour?.map(this.appendUvToPoint) ?? [],
+    holes: piece.holes?.map((hole) => ({ path: this.holeToPath(hole) })) ?? [],
+  });
 
-  get imageGraphics() {
-    return {
-      style: { fill: this.fill },
-      children: [this.mainPiecesGraphics],
-    };
-  }
-
-  get mainPiecesGraphics() {
+  getMainPiecesGraphics() {
     return {
       children: this.pieces
         .filter((piece) => !piece.scrapCandidate)
         .map((piece) => ({
-          path: {
-            points: piece.contour?.map(this.appendUvToPoint) ?? [],
-            holes: piece.holes?.map((hole) => ({ path: { points: hole?.map(this.appendUvToPoint) ?? [] } })) ?? [],
-          },
+          path: this.pieceToPath(piece),
         })),
     };
   }
 
-  get scrapCandidatesGraphics() {
+  getMainHolesGraphics() {
+    return {
+      children: this.pieces
+        .filter((piece) => !piece.scrapCandidate)
+        .map((piece) => ({
+          children: piece.holes?.map((hole) => ({ path: this.holeToPath(hole) })) ?? [],
+        })),
+    };
+  }
+
+  getScrapCandidatesGraphics() {
     return {
       children: this.pieces
         .filter((piece) => piece.scrapCandidate)
         .map((piece) => ({
           transform: { translate: { x: 0, y: 0, z: -32 } },
-          path: {
-            points: piece.contour?.map(this.appendUvToPoint) ?? [],
-            holes: piece.holes?.map((hole) => ({ path: { points: hole?.map(this.appendUvToPoint) ?? [] } })) ?? [],
-          },
+          path: this.pieceToPath(piece),
         })),
     };
   }
 
-  get piecesGraphics() {
+  getPiecesGraphics() {
     return {
-      children: [...this.mainPiecesGraphics.children, ...this.scrapCandidatesGraphics.children],
+      children: [...this.getMainPiecesGraphics().children, ...this.getScrapCandidatesGraphics().children],
     };
   }
 
-  get scrapsGraphics() {
+  getScrapsGraphics() {
     return {
       children: this.scraps.map((piece) => ({
-        path: {
-          points: piece.contour?.map(this.appendUvToPoint) ?? [],
-          holes: piece.holes?.map((hole) => ({ path: { points: hole.map(this.appendUvToPoint) } })) ?? [],
-        },
+        path: this.pieceToPath(piece),
       })),
     };
   }
 
-  get polycutsGraphics() {
+  getPolycutsGraphics() {
     return {
       children:
         this.polycuts?.map((polycut) => ({
@@ -214,14 +206,27 @@ class Paper {
     };
   }
 
-  get graphics() {
+  toRenderGraphics() {
     return {
-      /*
-      style: {
-        fill: this.fill,
-      },
-      */
-      children: [...this.piecesGraphics.children, ...this.scrapsGraphics.children, ...this.polycutsGraphics.children],
+      children: [...this.getPiecesGraphics().children, ...this.getScrapsGraphics().children, ...this.getPolycutsGraphics().children],
+    };
+  }
+
+  toVideoGraphics(t, presetKey = "dramaticFlip", options) {
+    return presetKey in AnimationPresets ? AnimationPresets[presetKey](this, t, options) : this.getMainPiecesGraphics();
+  }
+
+  toPrintGraphics() {
+    return {
+      style: { fill: "#fff" },
+      children: [this.getMainPiecesGraphics()],
+    };
+  }
+
+  toImageGraphics() {
+    return {
+      style: { fill: this.fill },
+      children: [this.getMainPiecesGraphics()],
     };
   }
 
@@ -247,30 +252,59 @@ class Paper {
 
   rotate(theta = Math.PI / 4) {
     const rotatePoint = (point) => vector.rotate(point, theta);
+    const rotatePath = (path) => path.map(rotatePoint);
     this.pieces = this.pieces.map((piece) => ({
-      contour: piece.contour?.map(rotatePoint),
-      holes: piece.holes?.map((hole) => hole.map(rotatePoint)),
+      contour: rotatePath(piece?.contour ?? []),
+      holes: piece?.holes?.map((hole) => rotatePath(hole ?? [])) ?? [],
     }));
-    this.polycuts = this.polycuts.map((cut) => cut.map(rotatePoint));
+    this.polycuts = this.polycuts?.map(rotatePath) ?? [];
     this.rotation = (this.rotation + theta) % (Math.PI * 2);
+  }
+
+  setRotate(theta = 0) {
+    if (this.rotation !== theta) this.rotate(theta - this.rotation);
+  }
+
+  resetRotate() {
+    this.setRotate(0);
   }
 
   flipX() {
     const flipPointX = (point) => ({ x: -point.x, y: point.y });
+    const flipPathX = (path) => path.map(flipPointX);
     this.pieces = this.pieces.map((piece) => ({
-      contour: piece.contour?.map(flipPointX),
-      holes: piece.holes?.map((hole) => hole.map(flipPointX)),
+      contour: flipPathX(piece?.contour ?? []),
+      holes: piece?.holes?.map((hole) => flipPathX(hole ?? [])) ?? [],
     }));
     this.xFlipped = !this.xFlipped;
   }
 
   flipY() {
     const flipPointY = (point) => ({ x: point.x, y: -point.y });
+    const flipPathY = (path) => path.map(flipPointY);
     this.pieces = this.pieces.map((piece) => ({
-      contour: piece.contour?.map(flipPointY),
-      holes: piece.holes?.map((hole) => hole.map(flipPointY)),
+      contour: flipPathY(piece?.contour ?? []),
+      holes: piece?.holes?.map((hole) => flipPathY(hole ?? [])) ?? [],
     }));
     this.yFlipped = !this.yFlipped;
+  }
+
+  resetFlipX() {
+    if (this.xFlipped) this.flipX();
+  }
+
+  resetFlipY() {
+    if (this.yFlipped) this.flipY();
+  }
+
+  resetFlips() {
+    this.resetFlipX();
+    this.resetFlipY();
+  }
+
+  reset() {
+    this.resetRotate();
+    this.resetFlips();
   }
 
   nearLastCutBack(x, y) {
@@ -286,19 +320,29 @@ class Paper {
   }
 
   simplifyPiecesAndScraps() {
-    this.pieces = this.pieces.map((piece) => this.simplifyPiece(piece));
-    this.scraps = this.scraps.map((piece) => this.simplifyPiece(piece));
+    this.pieces = this.pieces?.map((piece) => this.simplifyPiece(piece)) ?? [];
+    this.scraps = this.scraps?.map((piece) => this.simplifyPiece(piece)) ?? [];
   }
 
   simplifyPiece(piece) {
     const contour = simplifyPath(piece?.contour ?? [], 0.5);
-    const holes = piece.holes?.map((hole) => simplifyPath(hole, 0.5)) ?? [];
-    return { contour, holes };
+    // REMOVE HOLES OF TINY AREA
+    const holes = piece.holes?.map((hole) => simplifyPath(hole ?? [], 0.5)) ?? [];
+    return {
+      contour,
+      holes: holes.filter((hole) => {
+        hole = hole?.filter((point) => point?.x && point?.y) ?? [];
+        return geometry.getPolygonArea(hole) > 1;
+      }),
+    };
   }
 
   cut(x1, y1, x2, y2) {
     let hasImpact = false;
-    if (this.pieces.length > 1 && !this.manualScrapSelection) this.sortPieces();
+    if (this.pieces.length > 1 && !this.manualScrapSelection) {
+      this.sortPieces();
+      this.moveSecondaryPiecesToScraps();
+    }
     if (this.pieces.length === 1) {
       if (this.lastCutBackOnPaper && this.nearLastCutBack(x1, y1)) {
         if (this.meetMinGap(x2, y2)) this.polycuts.at(-1).push({ x: x2, y: y2 });
@@ -351,8 +395,8 @@ class Paper {
 
   filterScraps() {
     if (this.pieces.length > 1) {
-      this.scraps = [...this.scraps, ...this.pieces.filter((piece) => piece.scrapCandidate)];
-      this.pieces = this.pieces.filter((piece) => !piece.scrapCandidate);
+      this.scraps = [...this.scraps, ...this.pieces.filter((piece) => piece?.scrapCandidate)];
+      this.pieces = this.pieces.filter((piece) => !!piece && !piece?.scrapCandidate);
       // THIS IS TO AVOID OVERLAPPING PIECES IF SIMPLIFYING TOO EARLY
     } else {
       this.simplifyPiecesAndScraps();
@@ -362,7 +406,7 @@ class Paper {
   // Maybe this could be achieved with transform instead?
   updateScraps() {
     const fallingSpeed = 16;
-    this.scraps = this.scraps.map((scrap, index) => {
+    this.scraps = this.scraps.map((scrap) => {
       scrap.contour = scrap.contour?.map((point) => ({ x: point?.x ?? 0, y: point?.y ?? 0, z: (point?.z ?? 0) - fallingSpeed }));
       scrap.holes = scrap.holes?.map((hole) => hole.map((point) => ({ x: point.x, y: point.y, z: (point.z ?? 0) - fallingSpeed })));
       return scrap;
@@ -371,11 +415,12 @@ class Paper {
   }
 
   updateScrapCandidates(x, y) {
-    if (this.pieces.length > 1) {
-      this.pieces = this.pieces.map((piece) => {
-        piece.scrapCandidate = geometry.pointInPolygonWithHoles(x, y, piece);
-        return piece;
-      });
+    if (this.pieces?.length > 1) {
+      this.pieces =
+        this.pieces?.map((piece) => {
+          if (piece && typeof piece === "object") piece.scrapCandidate = geometry.pointInPolygonWithHoles(x, y, piece) ?? false;
+          return piece;
+        }) ?? [];
     } else {
       this.manualScrapSelection = false;
     }
@@ -395,24 +440,36 @@ class Paper {
   }
 
   removeFarScraps() {
-    // this.scraps = [...this.scraps, ...this.pieces.filter((piece) => piece.contour[0].z !== undefined && piece.contour[0].z <= -this.farPlaneDistance)];
-    this.scraps = this.scraps.filter((scrap) => scrap.contour?.at(0).z === undefined || scrap.contour?.at(0).z > -this.farPlaneDistance);
+    this.scraps = this.scraps?.filter((scrap) => scrap?.contour?.at(0)?.z === undefined || scrap?.contour?.at(0)?.z > -this.farPlaneDistance) ?? [];
   }
 
-  // MOVE PIECE CONTAINING ANCHOR TO FIRST
   sortPieces() {
+    // SORT BY COMPLEXITY (PRIORITIZES PIECE WITH MORE HOLES OR TOTAL POINTS)
     this.pieces.sort((pieceA, pieceB) => {
-      // SORT BY PIECE COMPLEXITY (PRIORITIZES PIECE WITH MORE POINTS)
-      let a = pieceA.holes.length;
-      let b = pieceB.holes.length;
+      let a = pieceA?.holes?.length ?? 0;
+      let b = pieceB?.holes?.length ?? 0;
       if (a === b) {
-        a = pieceA.holes.reduce((sum, hole) => sum + hole.length, pieceA.contour?.length ?? 0);
-        b = pieceB.holes.reduce((sum, hole) => sum + hole.length, pieceB.contour?.length ?? 0);
+        a = pieceA?.holes?.reduce((sum, hole) => sum + (hole?.length ?? 0), pieceA?.contour?.length ?? 0) ?? 0;
+        b = pieceB?.holes?.reduce((sum, hole) => sum + (hole?.length ?? 0), pieceB?.contour?.length ?? 0) ?? 0;
       }
       return b - a;
     });
+  }
+
+  moveSecondaryPiecesToScraps() {
     this.scraps = [...this.scraps, ...this.pieces.slice(1)];
     this.pieces = this.pieces.slice(0, 1);
+  }
+
+  moveMainHolesBy(x, y) {
+    if (this.mainPiece && typeof this.mainPiece === "object") this.mainPiece.holes = this.mainPiece.holes?.map((hole) => hole?.filter((point) => point && point.x && point.y).map((point) => vector.add(point, { x, y })) ?? []) ?? [];
+  }
+
+  centerHoles() {
+    const boundingBox = getBoundingBox(this.getMainHolesGraphics());
+    const offsetX = this.x - boundingBox.x;
+    const offsetY = this.y - boundingBox.y;
+    this.moveMainHolesBy(offsetX, offsetY);
   }
 }
 

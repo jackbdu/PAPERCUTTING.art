@@ -5,6 +5,24 @@ body {
   font-family: Ubuntu, Arial, Helvetica, sans-serif;
 }
 
+canvas,
+input,
+footer {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+input {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  z-index: 10;
+}
+
 #help {
   position: fixed;
   top: 0;
@@ -23,7 +41,7 @@ body {
   color: #000;
 }
 
-.hide-info #help {
+.hide-help #help {
   display: none;
 }
 

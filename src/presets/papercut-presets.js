@@ -6,7 +6,6 @@ const PapercutPresets = {
       x: 0,
       y: 0,
     },
-    fill: "#e01b0d",
     shape: "rect",
     pieces: [
       {
@@ -822,7 +821,6 @@ const PapercutPresets = {
       x: 0,
       y: 0,
     },
-    fill: "#e01b0d",
     shape: "rect",
     pieces: [
       {

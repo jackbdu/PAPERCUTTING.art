@@ -11,6 +11,7 @@ const renderImage = (p, graphics, options) => {
   const print = options?.print ?? false;
   const stripeGap = options?.stripeGap ?? 8;
   const patternColor = options?.patternColor ?? "#999";
+  const strokeWeight = options?.strokeWeight ?? 1;
 
   const boundingBox = getBoundingBox(graphics);
   const padding = Math.min(boundingBox.width, boundingBox.height) * paddingRatio;
@@ -22,6 +23,8 @@ const renderImage = (p, graphics, options) => {
   const exportHeight = paddedAspectRatio >= exportAspectRatio ? paddedWidth / exportAspectRatio : paddedHeight;
   const p5Graphics = p.createGraphics(exportWidth, exportHeight);
   p5Graphics.background("#fff");
+  p5Graphics.strokeJoin(p.ROUND);
+  p5Graphics.strokeWeight(strokeWeight);
   if (print) {
     renderStripes(p5Graphics, { color: patternColor, gap: stripeGap });
     const shortSideTextNum = 8;
